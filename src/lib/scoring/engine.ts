@@ -4,14 +4,13 @@ import type {
   ScoredTopic,
   Recommendation,
   TopicCategory,
-  ViralityInputs,
-  EngagementInputs,
-  FreshnessInputs,
-  AuthorityInputs,
 } from '@/types';
+import type { ViralityInputs } from './virality';
+import type { CompetitiveInputs } from './competitive';
+import type { AuthorityInputs } from './authority';
 import { SCORING_WEIGHTS, TOPIC_TYPE_MULTIPLIERS } from './weights';
 import { calculateViralityScore } from './virality';
-import { calculateCompetitiveScore, CompetitiveInputs } from './competitive';
+import { calculateCompetitiveScore } from './competitive';
 import { calculateFreshnessScore, calculateLifecycleStage } from './freshness';
 import { calculateAuthorityScore } from './authority';
 import { calculateEngagementScore } from './engagement';

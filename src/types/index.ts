@@ -173,7 +173,7 @@ export interface GoogleTrendsData {
   interestOverTime: { time: string; value: number }[];
   relatedQueries: { query: string; value: number }[];
   geographicBreakdown: { region: string; country: string; value: number }[];
-  breakout: number | null;
+  breakoutPercent: number | null;
 }
 
 // Scoring Engine Types
