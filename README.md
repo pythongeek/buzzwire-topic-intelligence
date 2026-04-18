@@ -2,11 +2,22 @@
 
 AI-powered topic discovery and scoring engine for viral content.
 
-![Dashboard Preview](https://via.placeholder.com/800x400?text=Topic+Intelligence+Dashboard)
+## 100% FREE - No Paid API Keys Required
+
+This project uses **completely free data sources** - no RapidAPI, no paid subscriptions.
+
+## Data Sources (All Free)
+
+| Platform | Method | Rate Limit |
+|----------|--------|------------|
+| **Twitter/X** | Nitter RSS | Unlimited |
+| **Reddit** | Public JSON API | Unlimited |
+| **News** | Google News RSS + HackerNews | Unlimited |
+| **Trends** | Google Trends Embed | Unlimited |
 
 ## Features
 
-- **Topic Discovery** - Search and track topics across Twitter, Reddit, and News sources
+- **Topic Discovery** - Search across Twitter, Reddit, HackerNews, and News sources
 - **5-Dimension Scoring Engine**:
   - Virality Score (Twitter/Reddit engagement velocity)
   - Competitive Score (content gap analysis)
@@ -14,7 +25,7 @@ AI-powered topic discovery and scoring engine for viral content.
   - Authority Score (source credibility weighting)
   - Engagement Quality Score (sentiment and save rates)
 
-- **Training Dataset** - Build custom ML training data with labeled outcomes
+- **Training Dataset** - Label topics as Viral/Moderate/Flop → build ML dataset
 - **Visual Dashboard** - Recharts-powered visualizations
 - **Vercel Ready** - One-click deployment
 
@@ -24,16 +35,11 @@ AI-powered topic discovery and scoring engine for viral content.
 # Install dependencies
 npm install
 
-# Copy environment template
-cp .env.example .env.local
-
-# Add your API keys to .env.local:
-# TWITTER_BEARER_TOKEN=your_twitter_token
-# NEWS_API_KEY=your_newsapi_key
-
-# Run development server
+# Run development server (no API keys needed!)
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ## Deploy to Vercel
 
@@ -42,22 +48,31 @@ npm run dev
 Or via CLI:
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
+npx vercel
 ```
 
-## API Endpoints
+## How It Works
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/topics` | Get topics with scores (query params: `q`, `category`) |
-| POST | `/api/topics` | Score a custom topic |
-| GET | `/api/training` | Get training examples |
-| POST | `/api/training` | Add training example |
-| DELETE | `/api/training` | Clear training data |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DATA COLLECTION (FREE)                    │
+├──────────────┬──────────────┬──────────────┬────────────────┤
+│   Twitter    │    Reddit    │  Google News │ HackerNews API │
+│  (Nitter)   │  (Public)    │    (RSS)     │   (Free API)   │
+└──────┬───────┴──────┬───────┴──────┬───────┴───────┬────────┘
+       │               │               │               │
+       ▼               ▼               ▼               ▼
+┌─────────────────────────────────────────────────────────────┐
+│              5-DIMENSION SCORING ENGINE                    │
+│  Virality │ Competitive │ Freshness │ Authority │ Engage   │
+└─────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   TOPIC DASHBOARD                           │
+│  📊 Score Cards  │  📈 Trend Charts  │  🎯 Recommendations │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Scoring Engine
 
@@ -75,8 +90,8 @@ TOPIC_SCORE = (
 
 ### Default Weights
 
-| Component | Default Weight | Description |
-|-----------|---------------|-------------|
+| Component | Weight | Description |
+|-----------|--------|-------------|
 | Virality | 25% | Engagement velocity across platforms |
 | Competitive | 25% | Content gap and saturation analysis |
 | Freshness | 20% | Time decay with momentum bonus |
@@ -87,11 +102,11 @@ TOPIC_SCORE = (
 
 | Stage | Hours | Multiplier | Action |
 |-------|-------|------------|--------|
-| Emergence | 0-6 | 1.5× | Publish NOW |
-| Acceleration | 6-24 | 1.3× | Monitor closely |
-| Peak | 24-72 | 1.0× | Act fast |
-| Decay | 72-168 | 0.6× | Long-tail angle |
-| Evergreen | 168+ | 0.3× | Time-insensitive |
+| 🔥 Emergence | 0-6 | 1.5× | Publish NOW |
+| 📈 Acceleration | 6-24 | 1.3× | Monitor closely |
+| ⚡ Peak | 24-72 | 1.0× | Act fast |
+| 📉 Decay | 72-168 | 0.6× | Long-tail angle |
+| 🌲 Evergreen | 168+ | 0.3× | Time-insensitive |
 
 ## Tech Stack
 
@@ -99,13 +114,16 @@ TOPIC_SCORE = (
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
-- **Data Sources**: Twitter API, Reddit API, NewsAPI, Google Trends
+- **Data**: Nitter RSS, Reddit API, Google News RSS, HackerNews API
 
-## Environment Variables
+## Optional: Add API Keys for Higher Limits
+
+While everything works **without API keys**, you can add optional keys for higher rate limits:
 
 ```env
-TWITTER_BEARER_TOKEN=your_twitter_bearer_token
-NEWS_API_KEY=your_newsapi_key
+# .env.local (optional)
+TWITTER_BEARER_TOKEN=your_twitter_token  # Twitter API (500K/month free)
+NEWS_API_KEY=your_key                     # NewsAPI (100/day free)
 ```
 
 ## License
