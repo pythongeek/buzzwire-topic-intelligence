@@ -5,9 +5,9 @@
  */
 
 const NITTER_INSTANCES = [
-  'nitter.privacydev.net',
-  'nitter.poast.org',
-  'nitter.net',
+  'https://nitter.privacydev.net',
+  'https://nitter.poast.org',
+  'https://nitter.net',
 ];
 
 /**
