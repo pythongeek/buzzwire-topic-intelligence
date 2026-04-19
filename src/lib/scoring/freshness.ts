@@ -98,7 +98,7 @@ export function calculateLifecycleStage(hoursSinceEmergence: number): LifecycleS
 }
 
 function calculateProjectedPeak(inputs: FreshnessInputs): Date | null {
-  const { volumeHistory, topicType, decayConstant } = inputs;
+  const { volumeHistory, topicType, topicAgeHours } = inputs;
 
   if (volumeHistory.length < 2) {
     // Not enough data to project
@@ -109,8 +109,8 @@ function calculateProjectedPeak(inputs: FreshnessInputs): Date | null {
   // Peak is typically at emergence/acceleration boundary for trending topics
   if (topicType === 'breaking_news' || topicType === 'trend') {
     // For fast-moving topics, peak is soon
-    const hoursToPeak = Math.max(2, 12 - (hoursSinceEmergence * 0.2));
-    if (hoursSinceEmergence < hoursToPeak) {
+    const hoursToPeak = Math.max(2, 12 - (topicAgeHours * 0.2));
+    if (topicAgeHours < hoursToPeak) {
       return new Date(Date.now() + hoursToPeak * 60 * 60 * 1000);
     }
   }

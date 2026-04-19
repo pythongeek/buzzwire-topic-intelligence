@@ -21,7 +21,7 @@ interface TrendChartProps {
 export function TrendChart({ data, title, height = 200 }: TrendChartProps) {
   const formattedData = data.map((d, i) => ({
     ...d,
-    time: new Date(d.time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    time: new Date(parseInt(d.time) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     index: i,
   }));
 

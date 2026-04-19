@@ -2,6 +2,7 @@
 
 import {
   RadarChart,
+  Radar,
   RadialBarChart,
   RadialBar,
   ResponsiveContainer,
