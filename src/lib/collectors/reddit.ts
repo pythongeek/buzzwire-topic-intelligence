@@ -1,61 +1,20 @@
 /**
- * Reddit Data Collector - Enhanced with Pushshift + Reddit API
+ * Reddit Data Collector - Real Data Only
  * 
- * Sources (in order of preference):
- * 1. Pushshift API (higher rate limits, better for research)
+ * Sources:
+ * 1. Pushshift API (higher rate limits, historical access)
  * 2. Reddit public JSON API (real-time)
- * 3. Simulated data (never fail)
+ * 
+ * Returns EMPTY ARRAY if no data - NO FAKE DATA
  */
 
 import type { RedditPost } from '@/types';
 
-// Pushshift API base
 const PUSHSHIFT_BASE = 'https://api.pusht.sh/reddit';
-
-// Reddit JSON API base
 const REDDIT_BASE = 'https://www.reddit.com';
 
-// Simulated post generator
-function generateRealisticPost(query: string, index: number): RedditPost {
-  const now = Date.now();
-  const hoursAgo = Math.random() * 72; // Up to 3 days old
-  
-  const subreddits = ['technology', 'programming', 'machinelearning', 'ArtificialInteligence', 'tech', 'gadgets', 'science', 'worldnews'];
-  const authors = ['TechEnthusiast_42', 'DataScienceGuy', 'DevOpsEng', 'FullStackDev', 'AIResearcher', 'CloudArchitect', 'SecurityExpert'];
-  
-  const templates = [
-    `Discussion: What are your thoughts on ${query}? I've been exploring this space and would love to hear perspectives.`,
-    `TIL something interesting about ${query}. Has anyone else noticed this trend?`,
-    `Guide: How to get started with ${query} - A comprehensive tutorial for beginners.`,
-    `Question about ${query}: What's the best approach in 2024? Looking for advice from experienced folks.`,
-    `Article: The complete guide to ${query} - Everything you need to know.`,
-    `My experience with ${query} after 6 months - Honest review and takeaways.`,
-    `Breaking: ${query} just got more interesting. Here's what changed.`,
-    `Comparison: ${query} vs alternatives - Which one should you choose?`,
-    `Tips and tricks for ${query} that most people don't know about.`,
-    `The future of ${query} - Predictions for the next 5 years based on current trends.`,
-  ];
-
-  const upvoteRange = [500, 1200, 3400, 8900, 15600, 45000];
-  const upvote = upvoteRange[index % upvoteRange.length] + Math.round(Math.random() * upvoteRange[index % upvoteRange.length] * 0.3);
-  
-  return {
-    id: `sim-${now}-${index}`,
-    title: templates[index % templates.length],
-    subreddit: subreddits[index % subreddits.length],
-    author: authors[index % authors.length],
-    createdAt: new Date(now - hoursAgo * 60 * 60 * 1000),
-    score: upvote,
-    numComments: Math.round(upvote * (0.05 + Math.random() * 0.15)),
-    selftext: index % 3 === 0 ? 'Sharing my experience and insights from working in this space...' : '',
-    url: 'https://reddit.com',
-    isVideo: false,
-  };
-}
-
 /**
- * Search Reddit posts using Pushshift API (primary)
- * Pushshift has higher rate limits and better historical access
+ * Search Reddit posts - REAL DATA ONLY
  */
 export async function searchPosts(
   query: string,
@@ -67,7 +26,7 @@ export async function searchPosts(
     before?: Date;
   } = {}
 ): Promise<RedditPost[]> {
-  const { limit = 25, after, before } = options;
+  const { limit = 25 } = options;
 
   // Try Pushshift first (better for research)
   try {
@@ -76,7 +35,7 @@ export async function searchPosts(
       return pushshiftPosts;
     }
   } catch (e) {
-    // Fall through to Reddit API
+    // Fall through
   }
 
   // Try Reddit API
@@ -86,11 +45,11 @@ export async function searchPosts(
       return redditPosts;
     }
   } catch (e) {
-    // Fall through to simulation
+    // Fall through
   }
 
-  // Always return data
-  return getSimulatedPosts(query, limit);
+  // Return empty - NO FAKE DATA
+  return [];
 }
 
 /**
@@ -202,18 +161,12 @@ function normalizeRedditPosts(children: any[]): RedditPost[] {
 /**
  * Get rising posts from a subreddit
  */
-export async function getRisingPosts(
-  subreddit: string,
-  limit: number = 25
-): Promise<RedditPost[]> {
+export async function getRisingPosts(subreddit: string, limit: number = 25): Promise<RedditPost[]> {
   try {
-    // Try Reddit's rising endpoint
     const response = await fetch(
       `${REDDIT_BASE}/r/${subreddit}/rising.json?limit=${limit}`,
       {
-        headers: {
-          'User-Agent': 'BuzzwireTopic/1.0',
-        },
+        headers: { 'User-Agent': 'BuzzwireTopic/1.0' },
         signal: AbortSignal.timeout(8000),
       }
     );
@@ -226,7 +179,7 @@ export async function getRisingPosts(
     // Fall through
   }
 
-  return getSimulatedPosts(subreddit, limit);
+  return [];
 }
 
 /**
@@ -234,10 +187,7 @@ export async function getRisingPosts(
  */
 export async function getTopPostsFromSubreddits(
   subreddits: string[],
-  options: {
-    timeframe?: 'hour' | 'day' | 'week' | 'month' | 'year';
-    limit?: number;
-  } = {}
+  options: { timeframe?: 'hour' | 'day' | 'week' | 'month' | 'year'; limit?: number } = {}
 ): Promise<{ subreddit: string; posts: RedditPost[] }[]> {
   const { timeframe = 'day', limit = 25 } = options;
 
@@ -247,9 +197,7 @@ export async function getTopPostsFromSubreddits(
         const response = await fetch(
           `${REDDIT_BASE}/r/${subreddit}/top.json?t=${timeframe}&limit=${limit}`,
           {
-            headers: {
-              'User-Agent': 'BuzzwireTopic/1.0',
-            },
+            headers: { 'User-Agent': 'BuzzwireTopic/1.0' },
             signal: AbortSignal.timeout(8000),
           }
         );
@@ -273,7 +221,7 @@ export async function getTopPostsFromSubreddits(
 }
 
 /**
- * Get posts from multiple subreddits at once (hot posts)
+ * Get hot posts from multiple subreddits
  */
 export async function getHotPostsFromSubreddits(
   subreddits: string[],
@@ -285,9 +233,7 @@ export async function getHotPostsFromSubreddits(
         const response = await fetch(
           `${REDDIT_BASE}/r/${subreddit}/hot.json?limit=${limit}`,
           {
-            headers: {
-              'User-Agent': 'BuzzwireTopic/1.0',
-            },
+            headers: { 'User-Agent': 'BuzzwireTopic/1.0' },
             signal: AbortSignal.timeout(8000),
           }
         );
@@ -337,59 +283,15 @@ export function calculateRedditVelocity(posts: RedditPost[]): number {
  */
 export function getSubredditsByCategory(category: string): string[] {
   const categoryMap: Record<string, string[]> = {
-    technology: [
-      'technology', 'programming', 'computers', 'gadgets', 'tech',
-      'SoftwareGore', 'ProgrammerHumor', 'machinelearning', 'ArtificialInteligence',
-    ],
-    business: [
-      'business', 'entrepreneur', 'startups', 'smallbusiness',
-      'investing', 'finance', 'economics', 'wallstreetbets',
-    ],
-    entertainment: [
-      'movies', 'television', 'music', 'gaming', 'books',
-      'Documentaries', 'anime',
-    ],
-    sports: [
-      'sports', 'nba', 'nfl', 'soccer', 'baseball',
-      'hockey', 'MMA', 'boxing', 'CollegeBasketball',
-    ],
-    news: [
-      'news', 'worldnews', 'politics', 'UpliftingNews',
-      'NotTheOnion', 'OffensiveArticles',
-    ],
-    science: [
-      'science', 'space', 'biology', 'chemistry',
-      'EverythingScience', 'askscience',
-    ],
-    health: [
-      'health', 'fitness', 'nutrition', 'mentalhealth',
-      'medical', 'PublicHealth', 'Wellness',
-    ],
-    lifestyle: [
-      'lifestyle', 'food', 'travel', 'fashion', 'DIY',
-      'LifeProTips', 'todayilearned', 'aww',
-    ],
+    technology: ['technology', 'programming', 'computers', 'gadgets', 'tech', 'SoftwareGore', 'ProgrammerHumor', 'machinelearning', 'ArtificialInteligence'],
+    business: ['business', 'entrepreneur', 'startups', 'smallbusiness', 'investing', 'finance', 'economics', 'wallstreetbets'],
+    entertainment: ['movies', 'television', 'music', 'gaming', 'books', 'Documentaries', 'anime'],
+    sports: ['sports', 'nba', 'nfl', 'soccer', 'baseball', 'hockey', 'MMA', 'boxing', 'CollegeBasketball'],
+    news: ['news', 'worldnews', 'politics', 'UpliftingNews', 'NotTheOnion', 'OffensiveArticles'],
+    science: ['science', 'space', 'biology', 'chemistry', 'EverythingScience', 'askscience'],
+    health: ['health', 'fitness', 'nutrition', 'mentalhealth', 'medical', 'PublicHealth', 'Wellness'],
+    lifestyle: ['lifestyle', 'food', 'travel', 'fashion', 'DIY', 'LifeProTips', 'todayilearned', 'aww'],
   };
 
   return categoryMap[category.toLowerCase()] || categoryMap.news;
-}
-
-/**
- * Get simulated posts - ALWAYS returns data
- */
-export function getSimulatedPosts(query: string, limit: number = 25): RedditPost[] {
-  const posts: RedditPost[] = [];
-  
-  for (let i = 0; i < limit; i++) {
-    posts.push(generateRealisticPost(query, i));
-  }
-  
-  // Sort by engagement
-  posts.sort((a, b) => {
-    const aEngagement = a.score + a.numComments;
-    const bEngagement = b.score + b.numComments;
-    return bEngagement - aEngagement;
-  });
-  
-  return posts;
 }

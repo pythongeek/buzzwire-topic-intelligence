@@ -96,7 +96,7 @@ export interface Source {
   publishedAt: Date;
 }
 
-export type Platform = 'twitter' | 'reddit' | 'news' | 'google_trends';
+export type Platform = 'twitter' | 'reddit' | 'news' | 'google_trends' | 'hackernews' | 'gdelt';
 
 export interface EngagementMetrics {
   likes?: number;

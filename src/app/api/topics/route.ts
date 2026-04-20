@@ -3,14 +3,26 @@ import { searchTweets, getTrendingTopics, calculateEngagementVelocity } from '@/
 import { searchPosts, getTopPostsFromSubreddits, calculateRedditVelocity } from '@/lib/collectors/reddit';
 import { searchNews, calculateCoverageVelocity } from '@/lib/collectors/news';
 import { getGoogleTrendsData, calculateTrendMomentum } from '@/lib/collectors/trends';
+import { searchStories } from '@/lib/collectors/hackernews';
+import { searchGDELT, calculateGDELTVelocity } from '@/lib/collectors/gdelt';
 import { scoreTopic, TopicScoringInputs } from '@/lib/scoring';
 import type { Topic, TopicCategory, ApiResponse, TopicScores } from '@/types';
+
+// Valid sources for filtering
+const VALID_SOURCES = ['twitter', 'reddit', 'news', 'trends', 'hackernews', 'gdelt'] as const;
+type SourceType = typeof VALID_SOURCES[number];
 
 // GET /api/topics - Get topics with scores
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q');
   const category = (searchParams.get('category') as TopicCategory) || 'technology';
+  
+  // Parse sources filter - defaults to all sources
+  const sourcesParam = searchParams.get('sources');
+  const enabledSources: SourceType[] = sourcesParam 
+    ? sourcesParam.split(',').filter((s: string): s is SourceType => VALID_SOURCES.includes(s as SourceType))
+    : [...VALID_SOURCES];
 
   try {
     if (!query) {
@@ -80,18 +92,51 @@ export async function GET(request: NextRequest) {
       } as ApiResponse<Topic[]>);
     }
 
-    // Collect data from all sources
-    const [twitterTweets, redditPosts, newsArticles, trendsData] = await Promise.all([
-      searchTweets(query, { maxResults: 10 }).catch(() => []),
-      searchPosts(query, { limit: 10 }).catch(() => []),
-      searchNews(query, { pageSize: 10 }).catch(() => []),
-      getGoogleTrendsData(query).catch(() => null),
-    ]);
+    // Collect data from enabled sources only
+    const dataPromises: Promise<any>[] = [];
+    const sourceMap: { [key: string]: number } = {};
+    let sourceIndex = 0;
+
+    if (enabledSources.includes('twitter')) {
+      sourceMap['twitter'] = sourceIndex++;
+      dataPromises.push(searchTweets(query, { maxResults: 10 }).catch(() => []));
+    }
+    if (enabledSources.includes('reddit')) {
+      sourceMap['reddit'] = sourceIndex++;
+      dataPromises.push(searchPosts(query, { limit: 10 }).catch(() => []));
+    }
+    if (enabledSources.includes('news')) {
+      sourceMap['news'] = sourceIndex++;
+      dataPromises.push(searchNews(query, { pageSize: 10 }).catch(() => []));
+    }
+    if (enabledSources.includes('trends')) {
+      sourceMap['trends'] = sourceIndex++;
+      dataPromises.push(getGoogleTrendsData(query).catch(() => null));
+    }
+    if (enabledSources.includes('hackernews')) {
+      sourceMap['hackernews'] = sourceIndex++;
+      dataPromises.push(searchStories(query, { limit: 10 }).catch(() => []));
+    }
+    if (enabledSources.includes('gdelt')) {
+      sourceMap['gdelt'] = sourceIndex++;
+      dataPromises.push(searchGDELT(query, { maxResults: 10 }).catch(() => []));
+    }
+
+    const results = await Promise.all(dataPromises);
+    
+    const twitterTweets = sourceMap['twitter'] !== undefined ? results[sourceMap['twitter']] : [];
+    const redditPosts = sourceMap['reddit'] !== undefined ? results[sourceMap['reddit']] : [];
+    const newsArticles = sourceMap['news'] !== undefined ? results[sourceMap['news']] : [];
+    const trendsData = sourceMap['trends'] !== undefined ? results[sourceMap['trends']] : null;
+    const hackerNewsArticles = sourceMap['hackernews'] !== undefined ? results[sourceMap['hackernews']] : [];
+    const gdeltArticles = sourceMap['gdelt'] !== undefined ? results[sourceMap['gdelt']] : [];
 
     // Calculate velocities
     const twitterVelocity = calculateEngagementVelocity(twitterTweets);
     const redditVelocity = calculateRedditVelocity(redditPosts);
     const newsVelocity = calculateCoverageVelocity(newsArticles);
+    const hackernewsVelocity = 0; // Will be calculated if we add HN velocity function
+    const gdeltVelocity = calculateGDELTVelocity(gdeltArticles);
     const trendMomentum = trendsData
       ? calculateTrendMomentum(trendsData.interestOverTime)
       : 0;
@@ -107,7 +152,7 @@ export async function GET(request: NextRequest) {
       keywordDifficulty: trendsData?.breakoutPercent
         ? Math.min(100, trendsData.breakoutPercent / 25)
         : 50,
-      contentVolume: twitterTweets.length + redditPosts.length + newsArticles.length,
+      contentVolume: twitterTweets.length + redditPosts.length + newsArticles.length + hackerNewsArticles.length + gdeltArticles.length,
       topicAgeHours: 4, // Estimated
       emergenceTime: new Date(Date.now() - 4 * 60 * 60 * 1000),
       volumeHistory: trendsData?.interestOverTime.map((i) => i.value) || [],
@@ -137,6 +182,20 @@ export async function GET(request: NextRequest) {
         })),
         ...newsArticles.map((a) => ({
           platform: 'news' as const,
+          name: a.source.name,
+          url: a.url,
+          engagement: {},
+          publishedAt: a.publishedAt,
+        })),
+        ...hackerNewsArticles.map((a) => ({
+          platform: 'hackernews' as const,
+          name: a.source.name,
+          url: a.url,
+          engagement: {},
+          publishedAt: a.publishedAt,
+        })),
+        ...gdeltArticles.map((a) => ({
+          platform: 'gdelt' as const,
           name: a.source.name,
           url: a.url,
           engagement: {},

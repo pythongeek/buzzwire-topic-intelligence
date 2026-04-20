@@ -16,6 +16,15 @@ const CATEGORIES: { value: TopicCategory; label: string }[] = [
   { value: 'breaking_news', label: 'Breaking News' },
 ];
 
+const SOURCES: { value: string; label: string; icon: string }[] = [
+  { value: 'twitter', label: 'Twitter', icon: '🐦' },
+  { value: 'reddit', label: 'Reddit', icon: '🤖' },
+  { value: 'hackernews', label: 'Hacker News', icon: '👾' },
+  { value: 'news', label: 'News', icon: '📰' },
+  { value: 'gdelt', label: 'GDELT', icon: '🌍' },
+  { value: 'trends', label: 'Google Trends', icon: '📈' },
+];
+
 const SAMPLE_TOPICS: Topic[] = [
   {
     id: 'sample-1',
@@ -111,6 +120,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'discover' | 'training' | 'settings'>('discover');
   const [trainingExamples, setTrainingExamples] = useState<TrainingExample[]>([]);
+  const [enabledSources, setEnabledSources] = useState<string[]>(['twitter', 'reddit', 'hackernews', 'news', 'gdelt', 'trends']);
+  const [showSourceFilters, setShowSourceFilters] = useState(false);
 
   // Fetch topics
   const fetchTopics = useCallback(async (query?: string) => {
@@ -118,6 +129,9 @@ export default function Dashboard() {
     try {
       const params = new URLSearchParams({ category });
       if (query) params.set('q', query);
+      if (enabledSources.length > 0 && enabledSources.length < 6) {
+        params.set('sources', enabledSources.join(','));
+      }
 
       const response = await fetch(`/api/topics?${params}`);
       const data: ApiResponse<Topic[]> = await response.json();
@@ -136,7 +150,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [category, selectedTopic]);
+  }, [category, selectedTopic, enabledSources]);
 
   // Fetch training examples
   const fetchTrainingExamples = useCallback(async () => {
@@ -297,6 +311,44 @@ export default function Dashboard() {
                 </button>
               </form>
 
+              {/* Source Filters */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                <button
+                  onClick={() => setShowSourceFilters(!showSourceFilters)}
+                  className="w-full px-4 py-3 flex items-center justify-between text-sm text-gray-300 hover:bg-gray-700/50 transition"
+                >
+                  <span>📡 Source Filters ({enabledSources.length} of 6 enabled)</span>
+                  <span>{showSourceFilters ? '▲' : '▼'}</span>
+                </button>
+                {showSourceFilters && (
+                  <div className="px-4 pb-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {SOURCES.map((source) => (
+                        <label
+                          key={source.value}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-700/50 cursor-pointer transition"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={enabledSources.includes(source.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEnabledSources([...enabledSources, source.value]);
+                              } else {
+                                setEnabledSources(enabledSources.filter((s) => s !== source.value));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>{source.icon}</span>
+                          <span className="text-sm text-gray-300">{source.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Topics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {isLoading ? (
@@ -306,7 +358,11 @@ export default function Dashboard() {
                     <TopicCard
                       key={topic.id}
                       topic={topic}
-                      onClick={() => setSelectedTopic(topic)}
+                      onClick={() => {
+                        setSelectedTopic(topic);
+                        // Save to localStorage for detail page
+                        localStorage.setItem('selectedTopic', JSON.stringify(topic));
+                      }}
                     />
                   ))
                 ) : (
@@ -329,7 +385,14 @@ export default function Dashboard() {
                       <OverallScore score={selectedTopic.scores.overall} size="large" />
                     </div>
 
-                    <p className="text-gray-400 mb-6">{selectedTopic.description}</p>
+                    <p className="text-gray-400 mb-4">{selectedTopic.description}</p>
+                    
+                    <a
+                      href={`/topic/${selectedTopic.id}`}
+                      className="inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 mb-6"
+                    >
+                      View full reasoning and source details →
+                    </a>
 
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-gray-300 mb-3">Score Breakdown</h3>

@@ -26,13 +26,13 @@ export async function getTopStories(limit: number = 20): Promise<NewsArticle[]> 
     );
 
     if (!response.ok) {
-      return getSimulatedHNArticles('Hacker News Top', limit);
+      return [];
     }
 
     const data = await response.json();
     return data.hits.map(normalizeHNArticle);
   } catch (e) {
-    return getSimulatedHNArticles('Hacker News Top', limit);
+    return [];
   }
 }
 
@@ -57,13 +57,13 @@ export async function searchStories(
     );
 
     if (!response.ok) {
-      return getSimulatedHNArticles(query, limit);
+      return [];
     }
 
     const data = await response.json();
     return data.hits.map(normalizeHNArticle);
   } catch (e) {
-    return getSimulatedHNArticles(query, limit);
+    return [];
   }
 }
 
@@ -83,13 +83,13 @@ export async function getNewestStories(limit: number = 20): Promise<NewsArticle[
     );
 
     if (!response.ok) {
-      return getSimulatedHNArticles('HN Newest', limit);
+      return [];
     }
 
     const data = await response.json();
     return data.hits.map(normalizeHNArticle);
   } catch (e) {
-    return getSimulatedHNArticles('HN Newest', limit);
+    return [];
   }
 }
 
@@ -109,13 +109,13 @@ export async function getAskHNPosts(limit: number = 15): Promise<NewsArticle[]> 
     );
 
     if (!response.ok) {
-      return getSimulatedHNArticles('Ask HN', limit);
+      return [];
     }
 
     const data = await response.json();
     return data.hits.map(normalizeHNArticle);
   } catch (e) {
-    return getSimulatedHNArticles('Ask HN', limit);
+    return [];
   }
 }
 
@@ -135,13 +135,13 @@ export async function getShowHNPosts(limit: number = 15): Promise<NewsArticle[]>
     );
 
     if (!response.ok) {
-      return getSimulatedHNArticles('Show HN', limit);
+      return [];
     }
 
     const data = await response.json();
     return data.hits.map(normalizeHNArticle);
   } catch (e) {
-    return getSimulatedHNArticles('Show HN', limit);
+    return [];
   }
 }
 
@@ -151,7 +151,7 @@ export async function getShowHNPosts(limit: number = 15): Promise<NewsArticle[]>
 function normalizeHNArticle(hit: any): NewsArticle {
   return {
     title: hit.title || 'Untitled',
-    description: hit.text || hit.comment_text || generateSnippet(hit.title),
+    description: hit.text || hit.comment_text || (hit.title?.slice(0, 160) + (hit.title?.length > 160 ? '...' : '')),
     url: hit.url || `https://news.ycombinator.com/item?id=${hit.objectID}`,
     urlToImage: null, // HN doesn't have images in API
     publishedAt: new Date(hit.created_at || Date.now()),
@@ -163,48 +163,7 @@ function normalizeHNArticle(hit: any): NewsArticle {
   };
 }
 
-/**
- * Generate a snippet from title
- */
-function generateSnippet(title: string): string {
-  if (!title) return '';
-  // First 160 chars of the title as description
-  return title.slice(0, 160) + (title.length > 160 ? '...' : '');
-}
 
-/**
- * Get simulated HN articles
- */
-function getSimulatedHNArticles(context: string, limit: number): NewsArticle[] {
-  const templates = [
-    { title: 'Show HN: I built an AI-powered topic research tool', description: 'After months of development, I launched my project that helps researchers discover trends across multiple platforms. Would love feedback!' },
-    { title: 'Ask HN: What programming language should I learn in 2024?', description: 'Looking to switch careers into tech. Between Rust, Go, and Python - what would you recommend for someone starting out?' },
-    { title: 'My startup failed because of this one mistake', description: 'We raised $2M, had 50K users, then collapsed. Here is what I learned and what I would do differently.' },
-    { title: 'The best way to learn something is to build it', description: 'After years of tutorials, I found that the most effective learning comes from building real projects. Heres my approach.' },
-    { title: 'We are living through a copyright crisis', description: 'AI companies are training on copyrighted work. The legal battles ahead will reshape how we create and consume content.' },
-    { title: 'I built a real-time topic tracking system', description: 'Sharing the architecture of the system I built to track trends across Reddit, Twitter, and news sources in real-time.' },
-    { title: 'Why PostgreSQL is winning in 2024', description: 'The battle between SQL and NoSQL is over. PostgreSQL won. Heres why and what it means for your next project.' },
-    { title: 'Understanding transformer architecture from scratch', description: 'A deep dive into how attention mechanisms work in LLMs. Includes code examples and visualizations.' },
-  ];
-
-  const now = Date.now();
-  
-  return Array.from({ length: Math.min(limit, 8) }, (_, i) => {
-    const template = templates[i % templates.length];
-    return {
-      title: template.title,
-      description: template.description,
-      url: `https://news.ycombinator.com/item?id=${now - i}`,
-      urlToImage: null,
-      publishedAt: new Date(now - i * 30 * 60 * 1000), // 30 min apart
-      source: {
-        id: 'hackernews',
-        name: 'Hacker News',
-      },
-      author: ['devhero42', 'techfounder', 'codewizard', 'startupfounder', 'mlengineer'][i % 5],
-    };
-  });
-}
 
 /**
  * Calculate HN engagement velocity

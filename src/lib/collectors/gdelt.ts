@@ -56,7 +56,7 @@ export async function searchGDELT(
 
     if (!response.ok) {
       console.error(`GDELT API error: ${response.status}`);
-      return getSimulatedGDELTArticles(query, maxResults);
+      return [];
     }
 
     const data = await response.json();
@@ -66,10 +66,10 @@ export async function searchGDELT(
     }
     
     // Fallback if no articles
-    return getSimulatedGDELTArticles(query, maxResults);
+    return [];
   } catch (e) {
     console.error('GDELT fetch error:', e);
-    return getSimulatedGDELTArticles(query, maxResults);
+    return [];
   }
 }
 
@@ -93,7 +93,7 @@ export async function getLatestNews(
     });
 
     if (!response.ok) {
-      return getSimulatedGDELTArticles('world news', maxResults);
+      return [];
     }
 
     const data = await response.json();
@@ -102,9 +102,9 @@ export async function getLatestNews(
       return data.articles.map(normalizeGDELTArticle);
     }
     
-    return getSimulatedGDELTArticles('breaking news', maxResults);
+    return [];
   } catch (e) {
-    return getSimulatedGDELTArticles('global news', maxResults);
+    return [];
   }
 }
 
@@ -138,7 +138,7 @@ export async function searchByTheme(
     });
 
     if (!response.ok) {
-      return getSimulatedGDELTArticles(theme, maxResults);
+      return [];
     }
 
     const data = await response.json();
@@ -147,9 +147,9 @@ export async function searchByTheme(
       return data.articles.map(normalizeGDELTArticle);
     }
     
-    return getSimulatedGDELTArticles(theme, maxResults);
+    return [];
   } catch (e) {
-    return getSimulatedGDELTArticles(theme, maxResults);
+    return [];
   }
 }
 
@@ -185,7 +185,7 @@ export async function getTrendingFromGDELT(
     }
   }
 
-  return trending.length > 0 ? trending : getSimulatedTrending();
+  return trending;
 }
 
 /**
@@ -206,52 +206,7 @@ function normalizeGDELTArticle(article: any): NewsArticle {
   };
 }
 
-/**
- * Get simulated GDELT articles
- */
-function getSimulatedGDELTArticles(context: string, limit: number): NewsArticle[] {
-  const templates = [
-    { title: 'Global leaders discuss climate action at summit', source: 'Reuters' },
-    { title: 'Tech companies announce AI safety initiatives', source: 'Associated Press' },
-    { title: 'Economic indicators show mixed signals for growth', source: 'Bloomberg' },
-    { title: 'Healthcare systems adapt to new challenges', source: 'BBC News' },
-    { title: 'International trade negotiations progress', source: 'Financial Times' },
-    { title: 'Scientists report breakthrough in research', source: 'Nature News' },
-    { title: 'Security experts warn of emerging threats', source: 'The Guardian' },
-    { title: 'Environmental policies shift across nations', source: 'CNN' },
-  ];
 
-  const now = Date.now();
-  
-  return Array.from({ length: Math.min(limit, 8) }, (_, i) => {
-    const template = templates[i % templates.length];
-    return {
-      title: `${template.title} (${context})`,
-      description: `Latest coverage and analysis on ${context} from global news sources. This article covers important developments that are shaping the current discourse.`,
-      url: `https://www.gdeltproject.org/article/${now - i}`,
-      urlToImage: null,
-      publishedAt: new Date(now - i * 45 * 60 * 1000), // 45 min apart
-      source: {
-        id: 'gdelt',
-        name: template.source,
-      },
-      author: null,
-    };
-  });
-}
-
-/**
- * Simulated trending
- */
-function getSimulatedTrending(): { topic: string; count: number; themes: string[] }[] {
-  return [
-    { topic: 'Climate Change', count: 156, themes: ['ENV_CLIMATE'] },
-    { topic: 'AI Safety', count: 134, themes: ['TECH_AI'] },
-    { topic: 'Economic Trends', count: 98, themes: ['ECON_STOCKMARKET'] },
-    { topic: 'Healthcare', count: 87, themes: ['HEALTH_DISEASE'] },
-    { topic: 'Security', count: 76, themes: ['SECURITY_WAR_CONFLICT'] },
-  ];
-}
 
 /**
  * Calculate GDELT coverage velocity
