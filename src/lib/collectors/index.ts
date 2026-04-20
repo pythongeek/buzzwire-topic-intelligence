@@ -4,3 +4,4 @@ export * from './reddit';
 export * from './news';
 export * from './trends';
 export * from './hackernews';
+export * from './gdelt';
